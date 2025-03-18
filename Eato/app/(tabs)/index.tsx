@@ -1,74 +1,60 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import { StyleSheet, TouchableOpacity, Text, View } from 'react-native';
+import { auth } from '../../FirebaseConfig';
+import { router } from 'expo-router';
+import { getAuth } from 'firebase/auth';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export default function TabOneScreen() {
 
-export default function HomeScreen() {
+  getAuth().onAuthStateChanged((user) => {
+    if (!user) router.replace('/');
+  });
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <Text style={styles.title}>Sign Out</Text>
+      <TouchableOpacity style={styles.button} onPress={() => auth.signOut()}>
+        <Text style={styles.text}>Sign Out</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: '#FAFAFA', // A softer white for a modern, minimalist background
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  title: {
+    fontSize: 28, // A bit larger for a more striking appearance
+    fontWeight: '800', // Extra bold for emphasis
+    color: '#1A237E', // A deep indigo for a sophisticated, modern look
+    marginBottom: 40, // Increased space for a more airy, open feel
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  separator: {
+    marginVertical: 30,
+    height: 2, // Slightly thicker for a more pronounced separation
+    width: '80%',
+    backgroundColor: '#E8EAF6', // Using a light indigo to match the border of the textInput
   },
+  button: {
+    width: '90%',
+    backgroundColor: '#5C6BC0', // A lighter indigo to complement the title color
+    padding: 20,
+    borderRadius: 15, // Softly rounded corners for a modern, friendly touch
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#5C6BC0', // Shadow color to match the button for a cohesive look
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 5,
+    elevation: 5, // Slightly elevated for a subtle 3D effect
+    marginTop: 15, // Adjusted to match the new style
+  },
+  text: {
+    color: '#FFFFFF', // Maintained white for clear visibility
+    fontSize: 18, // Slightly larger for emphasis
+    fontWeight: '600', // Semi-bold for a balanced weight
+  }
 });
