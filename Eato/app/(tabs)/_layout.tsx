@@ -1,8 +1,7 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
-import { useColorScheme } from 'react-native'; // Use React Native's built-in hook
+import { Tabs } from 'expo-router';
+import { useColorScheme } from 'react-native';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -11,18 +10,17 @@ function TabBarIcon(props: {
   return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
 }
 
-// Define color constants directly
 const COLORS = {
   light: {
-    tint: '#1e88e5', // Blue for light mode
+    tint: '#1e88e5',
   },
   dark: {
-    tint: '#ffffff', // White for dark mode
+    tint: '#ffffff',
   }
 };
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme() || 'light'; // Fallback to light theme
+  const colorScheme = useColorScheme() || 'light';
 
   return (
     <Tabs
@@ -34,7 +32,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Menu',
-          tabBarIcon: ({ color }) => <TabBarIcon name="cutlery" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -49,7 +47,7 @@ export default function TabLayout() {
         name="Account"
         options={{
           title: 'Account',
-          tabBarIcon: ({ color }) => <TabBarIcon name="list-alt" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="user-circle" color={color} />,
         }}
       />
     </Tabs>

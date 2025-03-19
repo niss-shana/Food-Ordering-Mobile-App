@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
-import { collection, query, where, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, deleteDoc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { app } from '../../FirebaseConfig'; // Adjust the path to your Firebase config
@@ -246,6 +246,98 @@ export default function CartScreen({ navigation }: { navigation: any }) {
     }
   };
 
+  // Function to handle checkout
+  const handleCheckout = () => {
+    const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const tax = totalPrice * 0.07;
+    const delivery = 2.99;
+    const orderTotal = totalPrice + tax + delivery;
+    
+    // Confirm checkout
+    Alert.alert(
+      "Confirm Order",
+      `Total: $${orderTotal.toFixed(2)}\n\nAre you ready to place your order?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Place Order",
+          style: "default",
+          onPress: () => placeOrder(orderTotal, tax, delivery)
+        }
+      ]
+    );
+  };
+
+  // Function to place order in Firestore
+  const placeOrder = async (total: number, tax: number, delivery: number) => {
+    setUpdating(true);
+    const userId = auth.currentUser?.uid;
+    
+    if (!userId) {
+      Alert.alert('Error', 'Please log in to place your order.');
+      setUpdating(false);
+      return;
+    }
+    
+    try {
+      // Create a new order in the "orderHistory" collection
+      const orderData = {
+        userId: userId,
+        items: cart.map(item => ({
+          menuItemId: item.id,
+          menuItemName: item.name,
+          price: item.price,
+          quantity: item.quantity
+        })),
+        subtotal: total - tax - delivery,
+        tax: tax,
+        delivery: delivery,
+        total: total,
+        status: "placed",
+        timestamp: serverTimestamp(),
+        paymentStatus: "pending"
+      };
+      
+      // Add the order to the orderHistory collection
+      const orderRef = await addDoc(collection(db, "orderHistory"), orderData);
+      console.log("Order placed with ID: ", orderRef.id);
+      
+      // Update the status of all items in the original orders collection
+      const updatePromises = cart.flatMap(item => 
+        item.documentIds.map(docId => 
+          updateDoc(doc(db, "orders", docId), { status: "placed" })
+        )
+      );
+      
+      await Promise.all(updatePromises);
+      
+      // Show success message
+      Alert.alert(
+        "Order Placed",
+        "Your order has been placed successfully!",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Navigate to a confirmation screen or order history
+              // For now, we'll just refresh the cart
+              fetchCartItems();
+              navigation.navigate('account', { orderId: orderRef.id });
+            }
+          }
+        ]
+      );
+    } catch (err) {
+      console.error('Error placing order:', err);
+      Alert.alert('Error', 'Failed to place your order. Please try again.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   // Render each cart item
@@ -281,7 +373,7 @@ export default function CartScreen({ navigation }: { navigation: any }) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#5C6BC0" />
+        <ActivityIndicator size="large" color="#A9C6A8" />
         <Text style={styles.loadingText}>Loading your cart...</Text>
       </View>
     );
@@ -307,7 +399,7 @@ export default function CartScreen({ navigation }: { navigation: any }) {
         <Text style={styles.emptyText}>Your cart is empty.</Text>
         <TouchableOpacity
           style={styles.shopButton}
-          onPress={() => navigation.navigate('Menu')}
+          onPress={() => navigation.navigate('home')}
         >
           <Text style={styles.shopButtonText}>Browse Menu</Text>
         </TouchableOpacity>
@@ -361,7 +453,8 @@ export default function CartScreen({ navigation }: { navigation: any }) {
 
         <TouchableOpacity 
           style={styles.checkoutButton}
-          disabled={updating}
+          onPress={handleCheckout}
+          disabled={updating || cart.length === 0}
         >
           <Text style={styles.buttonText}>Checkout</Text>
         </TouchableOpacity>
@@ -370,7 +463,7 @@ export default function CartScreen({ navigation }: { navigation: any }) {
       {updating && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#ffffff" />
-          <Text style={styles.loadingOverlayText}>Updating cart...</Text>
+          <Text style={styles.loadingOverlayText}>Processing your order...</Text>
         </View>
       )}
     </View>
@@ -381,21 +474,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#f8f9f6', // Light background with a hint of green
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
+    backgroundColor: '#f8f9f6',
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 20,
+    color: '#4a6848', // Darker green for header text
+    paddingBottom: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: '#A9C6A8', // Main green theme
   },
   list: {
     flex: 1,
+    marginBottom: 12,
   },
   item: {
     flexDirection: 'row',
@@ -403,25 +502,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
     padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
+    borderLeftWidth: 4,
+    borderLeftColor: '#A9C6A8', // Main green theme
   },
   itemInfo: {
     flex: 2,
   },
   name: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     marginBottom: 4,
+    color: '#333333',
   },
   price: {
     fontSize: 14,
-    color: '#666',
+    color: '#666666',
   },
   quantityContainer: {
     flexDirection: 'row',
@@ -430,39 +532,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   quantityButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#5C6BC0',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#A9C6A8', // Main green theme
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   quantityButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#ffffff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
   quantity: {
     fontSize: 16,
     marginHorizontal: 12,
     fontWeight: '500',
+    color: '#333333',
   },
   itemTotal: {
     fontSize: 16,
     fontWeight: 'bold',
     flex: 1,
     textAlign: 'right',
+    color: '#4a6848', // Darker green
   },
   summaryContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    padding: 20,
+    borderRadius: 12,
     marginTop: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
+    borderTopWidth: 4,
+    borderTopColor: '#A9C6A8', // Main green theme
   },
   summaryRow: {
     flexDirection: 'row',
@@ -471,90 +582,113 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 16,
-    color: '#666',
+    color: '#555555',
   },
   summaryValue: {
     fontSize: 16,
     fontWeight: '500',
+    color: '#333333',
   },
   totalRow: {
-    marginTop: 8,
-    paddingTop: 12,
+    marginTop: 12,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: '#e8e8e8',
   },
   totalLabel: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#333333',
   },
   totalValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#5C6BC0',
+    color: '#ED9E96', // Coral accent color
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginTop: 20,
+    marginBottom: 12,
   },
   updateButton: {
-    backgroundColor: '#7986CB',
+    backgroundColor: '#A9C6A8', // Main green theme
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     flex: 1,
     marginRight: 8,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   checkoutButton: {
-    backgroundColor: '#5C6BC0',
+    backgroundColor: '#ED9E96', // Coral accent color
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     flex: 1,
     marginLeft: 8,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   buttonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: '#666666',
   },
   errorText: {
     fontSize: 16,
-    color: '#e74c3c',
+    color: '#ED9E96', // Coral for error text
     marginBottom: 16,
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#e74c3c',
+    backgroundColor: '#ED9E96', // Coral accent color
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   retryText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '500',
   },
   emptyText: {
     fontSize: 18,
-    color: '#666',
-    marginBottom: 16,
+    color: '#666666',
+    marginBottom: 20,
   },
   shopButton: {
-    backgroundColor: '#5C6BC0',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    backgroundColor: '#A9C6A8', // Main green theme
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   shopButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   loadingOverlay: {
     position: 'absolute',
@@ -562,13 +696,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 8,
   },
   loadingOverlayText: {
     color: '#ffffff',
-    marginTop: 10,
+    marginTop: 12,
     fontSize: 16,
+    fontWeight: '500',
   },
 });

@@ -5,6 +5,25 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'fire
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+// Define theme colors
+const COLORS = {
+  primary: '#A9C6A8',      // Soft green
+  secondary: '#ED9E96',    // Soft coral/pink
+  accent: '#7FAC7E',       // Darker green for buttons
+  error: '#D76E67',        // Darker coral for errors
+  text: {
+    dark: '#2D3B2D',       // Dark green for primary text
+    medium: '#4A5F4A',     // Medium green for labels
+    light: '#687B68',      // Light green for secondary text
+  },
+  background: {
+    primary: '#F9FAFB',    // Light background
+    secondary: '#FFFFFF',  // White background
+    input: '#F1F5F1',      // Light green tint for inputs
+  },
+  border: '#DBE5DA',       // Light border color
+};
+
 const Signin = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -45,7 +64,6 @@ const Signin = () => {
       return false;
     }
 
-    
     return true;
   };
 
@@ -104,7 +122,7 @@ const Signin = () => {
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.formContainer}>
-            <Text style={styles.title}>{isLogin ? 'Welcome Eato' : 'Create Account'}</Text>
+            <Text style={styles.title}>{isLogin ? 'Welcome to Eato' : 'Create Account'}</Text>
             <Text style={styles.subtitle}>
               {isLogin ? 'Sign in to continue' : 'Sign up to get started'}
             </Text>
@@ -125,6 +143,7 @@ const Signin = () => {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                placeholderTextColor={COLORS.text.light}
                 accessibilityLabel="Email input"
               />
             </View>
@@ -139,10 +158,11 @@ const Signin = () => {
                   onChangeText={setPassword}
                   secureTextEntry={!passwordVisible}
                   autoCapitalize="none"
+                  placeholderTextColor={COLORS.text.light}
                   accessibilityLabel="Password input"
                 />
                 <TouchableOpacity onPress={togglePasswordVisibility} style={styles.visibilityIcon}>
-                  <Ionicons name={passwordVisible ? 'eye-off' : 'eye'} size={24} color="#6B7280" />
+                  <Ionicons name={passwordVisible ? 'eye-off' : 'eye'} size={24} color={COLORS.text.light} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -157,6 +177,7 @@ const Signin = () => {
                   onChangeText={setConfirmPassword}
                   secureTextEntry={!passwordVisible}
                   autoCapitalize="none"
+                  placeholderTextColor={COLORS.text.light}
                   accessibilityLabel="Confirm password input"
                 />
               </View>
@@ -197,7 +218,7 @@ export default Signin;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.background.primary,
   },
   keyboardAvoid: {
     flex: 1,
@@ -216,12 +237,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.text.dark,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6B7280',
+    color: COLORS.text.light,
     marginBottom: 32,
   },
   inputContainer: {
@@ -230,24 +251,24 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#4B5563',
+    color: COLORS.text.medium,
     marginBottom: 8,
   },
   textInput: {
     height: 56,
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E5E7EB',
+    backgroundColor: COLORS.background.input,
+    borderColor: COLORS.border,
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#1F2937',
+    color: COLORS.text.dark,
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E5E7EB',
+    backgroundColor: COLORS.background.input,
+    borderColor: COLORS.border,
     borderWidth: 1,
     borderRadius: 12,
     height: 56,
@@ -257,22 +278,27 @@ const styles = StyleSheet.create({
     height: 56,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#1F2937',
+    color: COLORS.text.dark,
   },
   visibilityIcon: {
     paddingHorizontal: 16,
   },
   button: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: COLORS.secondary,
     borderRadius: 12,
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 24,
+    elevation: 2,
+    shadowColor: COLORS.secondary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   buttonDisabled: {
-    backgroundColor: '#9AA5B1',
+    backgroundColor: '#C0C0C0',
   },
   buttonText: {
     color: '#FFFFFF',
@@ -284,20 +310,22 @@ const styles = StyleSheet.create({
   },
   switchText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: COLORS.text.light,
   },
   switchAction: {
-    color: '#4F46E5',
+    color: COLORS.primary,
     fontWeight: '600',
   },
   errorContainer: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: '#FDECEA',
     padding: 12,
     borderRadius: 8,
     marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.error,
   },
   errorText: {
-    color: '#DC2626',
+    color: COLORS.error,
     fontSize: 14,
     textAlign: 'center',
   },
